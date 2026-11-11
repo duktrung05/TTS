@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=81,<82"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "viet-asr-thesis"
+version = "0.1.0"
+description = "Vietnamese ASR thesis: audio preparation and Whisper transcription CLI"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = ["numpy>=2,<3", "scipy>=1.14,<2"]
+
+[project.optional-dependencies]
+model = ["torch>=2.6,<3", "transformers==5.10.4"]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+viet-asr = "asr_engine.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["asr_engine*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
