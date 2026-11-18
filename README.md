@@ -2,7 +2,7 @@
 
 Chuyển file ghi âm tiếng Việt thành văn bản. Thư mục làm việc là `tts`; mục tiêu là ASR/STT.
 
-**Phạm vi hiện tại: bài tập lớn (BTL).** Hướng phát triển ưu tiên là một trang nhận WAV/MP3/MP4, hiển thị và tải transcript, kèm đánh giá nhỏ bằng model pretrained. Kế hoạch đồ án tốt nghiệp cũ dùng để tham khảo mở rộng. [Kế hoạch BTL](docs/BTL_PLAN_VI.md)
+**Phạm vi hiện tại:Hướng phát triển ưu tiên là một trang nhận WAV/MP3/MP4, hiển thị và tải transcript, kèm đánh giá nhỏ bằng model pretrained. Kế hoạch đồ án tốt nghiệp cũ dùng để tham khảo mở rộng. [Kế hoạch BTL](docs/BTL_PLAN_VI.md)
 
 CLI đọc WAV/MP3/MP4, chuẩn hóa audio về mono 16 kHz, tạo waveform SVG, gọi Whisper/PhoWhisper và xuất TXT/JSON. Model mặc định là `vinai/PhoWhisper-small`. Transformers chạy trên CUDA nếu có, với CPU là phương án dự phòng khi dùng `--device auto`.
 
