@@ -33,8 +33,8 @@ def _validate_source(path: Path, max_duration: float, max_size_mb: float) -> Pat
     path = path.expanduser().resolve()
     if not path.is_file():
         raise ASRError(f"Không tìm thấy file audio: {path}")
-    if path.suffix.lower() not in {".wav", ".mp3"}:
-        raise ASRError("Bản đầu chỉ nhận file WAV hoặc MP3.")
+    if path.suffix.lower() not in {".wav", ".mp3", ".mp4"}:
+        raise ASRError("Chỉ nhận file WAV, MP3 hoặc MP4.")
     size = path.stat().st_size
     if size == 0:
         raise ASRError("File audio rỗng.")
@@ -57,20 +57,29 @@ def _decode_with_ffmpeg(path: Path, max_duration: float) -> np.ndarray:
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise ASRError(
-            "Đọc MP3 cần ffmpeg trong PATH. Cài ffmpeg hoặc thử file WAV trước."
+            "Đọc MP3/MP4 cần ffmpeg trong PATH. Cài ffmpeg hoặc thử file WAV trước."
         )
-    command = [
-        ffmpeg, "-nostdin", "-v", "error", "-i", str(path),
-        "-map", "0:a:0", "-t", str(max_duration + 1),
+    is_video = path.suffix.lower() == ".mp4"
+    command = [ffmpeg, "-nostdin", "-v", "error"]
+    if is_video:
+        command.extend(["-xerror", "-copyts", "-start_at_zero"])
+    command.extend(["-i", str(path), "-map", "0:a:0"])
+    if is_video:
+        # Fill a delayed audio start with silence so timestamps stay on the video timeline.
+        command.extend(["-af", f"aresample={SAMPLE_RATE}:async=1:first_pts=0"])
+    command.extend([
+        "-t", str(max_duration + 1),
         "-ac", "1", "-ar", str(SAMPLE_RATE), "-f", "s16le", "pipe:1",
-    ]
+    ])
     try:
         result = subprocess.run(command, capture_output=True, timeout=180, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ASRError(f"Không thể giải mã audio bằng ffmpeg: {exc}") from exc
     if result.returncode:
-        detail = result.stderr.decode("utf-8", errors="replace")[-500:]
-        raise ASRError(f"ffmpeg không đọc được audio: {detail}")
+        detail = result.stderr.decode("utf-8", errors="replace")
+        if is_video and "Stream map '0:a:0' matches no streams" in detail:
+            raise ASRError("File MP4 không có track âm thanh.")
+        raise ASRError(f"ffmpeg không đọc được audio: {detail[-500:].strip()}")
     if len(result.stdout) % 2:
         raise ASRError("ffmpeg trả audio PCM không hợp lệ.")
     return np.frombuffer(result.stdout, dtype="<i2")

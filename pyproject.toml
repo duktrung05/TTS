@@ -13,13 +13,16 @@ dependencies = ["numpy>=2,<3", "scipy>=1.14,<2"]
 [project.optional-dependencies]
 model = ["torch>=2.6,<3", "transformers==5.10.4"]
 dev = ["pytest>=8,<10"]
+data = ["pyarrow>=18"]
+demo = ["streamlit>=1.45,<2"]
 
 [project.scripts]
 viet-asr = "asr_engine.cli:main"
 
 [tool.setuptools.packages.find]
+where = ["backend"]
 include = ["asr_engine*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["backend/tests"]
 addopts = "-q"

@@ -2,12 +2,12 @@
 
 ## 1. Bạn đang ở bước nào?
 
-Đã triển khai chương trình dòng lệnh để đọc audio, chuẩn hóa, xem waveform và gọi model nhận dạng. Frontend/backend sản phẩm trong pipeline là các bước tiếp theo.
+CLI và giao diện Streamlit dùng chung backend. Xem [sơ đồ pipeline](ASR_PIPELINE_VI.md) để tìm module phụ trách mỗi bước.
 
-Từ `/home/dev/tts`, kích hoạt môi trường:
+Từ thư mục dự án trên máy demo, kích hoạt môi trường:
 
 ```bash
-source .venv/bin/activate
+conda activate "$PWD/.cache/asr-env"
 python -m asr_engine --help
 python -m asr_engine doctor
 ```
@@ -17,18 +17,18 @@ python -m asr_engine doctor
 ## 2. Làm quen với audio trước khi chạy model
 
 ```bash
-python -m asr_engine inspect data/synthetic/tone_pause.wav
-python -m asr_engine prepare data/synthetic/long_tone.wav
+python -m asr_engine inspect data/media_smoke/sample.mp3
+python -m asr_engine prepare data/media_smoke/sample.mp4
 ```
 
-`inspect` giải mã toàn bộ file trong giới hạn để kiểm tra tín hiệu thực, không chỉ đọc header. Bạn sẽ thấy sample rate/kênh nguồn, thời lượng, sample rate đích, peak và RMS. MP3 được ffmpeg giải mã thẳng về đích; các thông số kênh/sample rate nguồn chưa đo được sẽ để `null`.
+`inspect` giải mã file trong giới hạn để kiểm tra tín hiệu thực. Bạn sẽ thấy sample rate/kênh nguồn, thời lượng, sample rate đích, peak và RMS. FFmpeg giải mã MP3 và MP4 thẳng về mono 16 kHz, với kênh và sample rate nguồn để `null`. Với MP4, CLI lấy track âm thanh đầu tiên và giữ khoảng trễ đầu track trên timeline video.
 
 `prepare` tạo một thư mục trong `outputs/`, đường dẫn được in trên terminal. Mở `waveform.svg` bằng trình duyệt và nghe `normalized.wav`. Tone có khoảng lặng chỉ giúp kiểm tra tín hiệu và timeline; âm tone không có nội dung để chép thành câu.
 
 ## 3. Thu file giọng nói thật
 
 1. Dùng điện thoại hoặc micro thu khoảng 20–30 giây tiếng Việt trong nơi tương đối yên tĩnh.
-2. Chép file vào `data/`, ví dụ `data/my_recording.wav`. Nếu là MP3, cần ffmpeg để giải mã.
+2. Chép file vào `data/`, ví dụ `data/my_recording.wav`. Với MP3 và MP4, cài `ffmpeg` và đặt trong PATH.
 3. Nghe lại toàn bộ và viết nội dung đúng vào một file riêng; đó là reference để đối chiếu sau.
 4. Chạy `inspect`, rồi `prepare`; kiểm tra thời lượng đầu ra và nghe cả đầu/cuối.
 
@@ -76,7 +76,8 @@ Giữ cùng file và thiết bị để bắt đầu đối chiếu. Hai lần c
 | Không tìm thấy audio | Kiểm tra đường dẫn và thư mục hiện tại |
 | File rỗng/hỏng | Xuất lại audio hợp lệ, nghe lại bằng audio player |
 | Vượt giới hạn | Dùng file trong giới hạn 600 giây/100 MiB |
-| MP3 thiếu ffmpeg | Cài ffmpeg vào PATH hoặc thử WAV |
+| MP3/MP4 thiếu ffmpeg | Cài ffmpeg vào PATH hoặc thử WAV |
+| MP4 không có track âm thanh | Xuất lại video có âm thanh hoặc cung cấp file audio riêng |
 | Không load được checkpoint | Kiểm tra mạng và tên model; offline cần cache đầy đủ |
 | CUDA không dùng được | Chạy `--device cpu`, kiểm tra driver riêng khi cần GPU |
 | Thiếu bộ nhớ | Thử `vinai/PhoWhisper-base`; ghi rõ thay đổi model |
@@ -86,6 +87,6 @@ File im lặng số hoàn toàn được trả text rỗng mà không gọi mode
 
 ## 7. Các bước chưa hoàn thành
 
-Tải checkpoint và thử giọng nói thật trên môi trường hiện tại; dữ liệu/reference pilot; bộ chấm WER/CER; so hai model; thực nghiệm VAD/chia đoạn; HTTP API, upload UI và database. [Kế hoạch đầy đủ](ASR_PROJECT_PLAN_VI.md) ghi thứ tự và tiêu chí từng bước.
+Theo phạm vi BTL, bước tiếp theo là kiểm chứng nhận dạng MP3 và MP4 trên máy có FFmpeg, làm giao diện Streamlit và đánh giá trên một tập nhỏ có bản chép đối chiếu. [Kế hoạch BTL](BTL_PLAN_VI.md)
 
 Tài liệu API tham khảo khi triển khai: [PhoWhisper](https://huggingface.co/vinai/PhoWhisper-small), [Transformers Whisper generation](https://huggingface.co/docs/transformers/model_doc/whisper).

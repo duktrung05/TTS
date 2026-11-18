@@ -2,25 +2,43 @@
 
 Chuyển file ghi âm tiếng Việt thành văn bản. Thư mục làm việc là `tts`; mục tiêu là ASR/STT.
 
-**Bước đầu đã triển khai:** CLI đọc WAV/MP3, chuẩn hóa audio về mono 16 kHz, tạo waveform SVG, gọi Whisper/PhoWhisper và xuất TXT/JSON. Model mặc định là `vinai/PhoWhisper-small`, chạy bằng Transformers; thiết bị `auto` chọn CPU khi CUDA không dùng được.
+**Phạm vi hiện tại: bài tập lớn (BTL).** Hướng phát triển ưu tiên là một trang nhận WAV/MP3/MP4, hiển thị và tải transcript, kèm đánh giá nhỏ bằng model pretrained. Kế hoạch đồ án tốt nghiệp cũ dùng để tham khảo mở rộng. [Kế hoạch BTL](docs/BTL_PLAN_VI.md)
 
-Mã dự án mới được viết trong thư mục này; `/home/dev/asr/ASR` là nguồn tham khảo. Hiện chưa có giao diện upload hoặc HTTP API.
+CLI đọc WAV/MP3/MP4, chuẩn hóa audio về mono 16 kHz, tạo waveform SVG, gọi Whisper/PhoWhisper và xuất TXT/JSON. Model mặc định là `vinai/PhoWhisper-small`. Transformers chạy trên CUDA nếu có, với CPU là phương án dự phòng khi dùng `--device auto`.
+
+## Cấu trúc dự án
+
+| Thư mục | Tìm gì ở đây |
+|---|---|
+| `frontend/` | Giao diện Streamlit, chọn file, nghe lại, xem và tải bản chép |
+| `backend/asr_engine/` | CLI và lõi Python xử lý âm thanh, gọi model, lưu kết quả |
+| `backend/scripts/`, `backend/tests/` | Chuẩn bị dữ liệu và kiểm thử backend |
+| `data/` | Các bản ghi đầu vào |
+| `models/`, `outputs/` | Checkpoint và kết quả theo từng lần chạy |
+| `docs/` | Sơ đồ pipeline và hướng dẫn |
+
+Khi sửa luồng nhận dạng, bắt đầu ở [pipeline.py](backend/asr_engine/app/pipeline.py). Khi sửa giao diện, mở [app.py](frontend/app.py). Xem [sơ đồ và thứ tự gọi hàm](docs/ASR_PIPELINE_VI.md).
+
+## Demo trên trình duyệt
+
+Từ thư mục dự án, chạy lệnh sau rồi mở http://127.0.0.1:8501 trên cùng máy.
+
+```bash
+.cache/asr-env/bin/python -m streamlit run frontend/app.py --server.address 127.0.0.1 --server.port 8501 --server.maxUploadSize 100
+```
+
+Chọn **Dùng mẫu** hoặc **Tải tệp lên**, rồi bấm **Nhận dạng**. Giao diện dùng checkpoint cục bộ `models/PhoWhisper-small-clean` và lưu kết quả trong `outputs/demo/`. Khi cài ở môi trường khác, dùng `python -m pip install -e '.[demo,model]'` và chạy lệnh Streamlit bằng Python của môi trường đó.
 
 ## Chạy ngay trong workspace hiện tại
 
-Môi trường `.venv` đã được tạo. Từ thư mục `/home/dev/tts`:
+Từ thư mục gốc của dự án trên máy demo, dùng môi trường đã cài và mẫu MP3 có sẵn:
 
 ```bash
-source .venv/bin/activate
+conda activate "$PWD/.cache/asr-env"
 python -m asr_engine doctor
-python -m asr_engine inspect data/synthetic/tone_pause.wav
-python -m asr_engine prepare data/synthetic/long_tone.wav
-```
-
-Các file `data/synthetic/` đã được tạo để kiểm tra xử lý tín hiệu: tiếng tone, khoảng lặng và im lặng số. **Đây không phải file giọng nói hay dữ liệu đo độ chính xác ASR.** Muốn tự tạo ở một thư mục mới:
-
-```bash
-python scripts/create_test_audio.py --output-dir data/synthetic-new
+python -m asr_engine inspect data/media_smoke/sample.mp3
+python -m asr_engine transcribe data/media_smoke/sample.mp3 \
+  --model models/PhoWhisper-small-clean --local-files-only
 ```
 
 Chép file ghi âm thật vào `data/my_recording.wav`, sau đó chạy:
@@ -29,7 +47,7 @@ Chép file ghi âm thật vào `data/my_recording.wav`, sau đó chạy:
 python -m asr_engine transcribe data/my_recording.wav --device cpu
 ```
 
-Lần đầu cần mạng để tải checkpoint từ Hugging Face. Workspace hiện chưa tải được checkpoint vì kết nối DNS không hoạt động; do đó **chưa xác minh nhận dạng giọng nói thật bằng PhoWhisper**. Lệnh trên sẽ chỉ hoàn tất khi có checkpoint hợp lệ trong cache hoặc có mạng tải model.
+Lần đầu cần mạng để tải checkpoint từ Hugging Face. Trong workspace này đã chạy nhận dạng WAV tiếng Việt bằng checkpoint cục bộ `models/PhoWhisper-small-clean`.
 
 Nếu checkpoint đã có đầy đủ trong cache:
 
@@ -37,7 +55,12 @@ Nếu checkpoint đã có đầy đủ trong cache:
 python -m asr_engine transcribe data/my_recording.wav --device cpu --local-files-only
 ```
 
-Có thể truyền thư mục checkpoint có sẵn qua `--model /duong/dan/checkpoint`. Chỉ hỗ trợ kiến trúc Whisper/PhoWhisper ở bước này.
+Có thể truyền thư mục checkpoint Whisper/PhoWhisper có sẵn qua `--model`. Ví dụ, lệnh sau dùng checkpoint cục bộ để chép lời từ video.
+
+```bash
+python -m asr_engine transcribe data/my_recording.mp4 \
+  --model models/PhoWhisper-small-clean --local-files-only
+```
 
 ## Cài trên máy mới có kết nối mạng
 
@@ -54,7 +77,7 @@ python -m asr_engine doctor
 
 Lệnh PyTorch trên dành cho CPU. Khi triển khai GPU, chọn bản PyTorch/driver tương thích với máy rồi kiểm tra lại `doctor`; số đo trong workspace không đại diện cho máy của bạn. Trên Windows, kích hoạt bằng `.venv\Scripts\Activate.ps1` trong PowerShell.
 
-WAV được đọc và resample bằng SciPy, không cần `ffmpeg` executable. MP3 cần cài `ffmpeg` và để trong PATH. Ví dụ trên Ubuntu: `sudo apt install ffmpeg`; trên máy khác dùng cách cài phù hợp hệ điều hành.
+SciPy đọc và resample WAV. MP3 và MP4 cần `ffmpeg` trong PATH. Trên Ubuntu có thể cài bằng `sudo apt install ffmpeg`. Với MP4, CLI dùng track âm thanh đầu tiên và giữ khoảng trễ đầu track để timestamp khớp với timeline video.
 
 ## Kết quả và cấu hình mỗi lần chạy
 
@@ -72,7 +95,7 @@ Mỗi lần chạy tạo một thư mục riêng. Thất bại khi load/nhận d
 
 Whisper dùng đường sinh long-form, giữ toàn bộ audio thay vì cắt lấy 30 giây đầu. Timestamp theo đoạn là ước lượng từ model, chưa được đánh giá alignment; vì vậy hiện xuất TXT/JSON, chưa xuất SRT.
 
-Giới hạn: WAV/MP3, tối đa 100 MiB và 600 giây. Có thể hạ giới hạn bằng `--max-size-mb` và `--max-duration`. Dùng `--model openai/whisper-small` để thử mô hình đối chứng; `--revision` chọn commit/tag, `--threads` giới hạn thread CPU, `--output-dir` chọn thư mục kết quả.
+CLI nhận WAV/MP3/MP4 tối đa 100 MiB và 600 giây audio sau giải mã. Có thể hạ giới hạn bằng `--max-size-mb` và `--max-duration`. Dùng `--model openai/whisper-small` để thử mô hình đối chứng. `--revision` chọn commit/tag, `--threads` giới hạn thread CPU và `--output-dir` chọn thư mục kết quả.
 
 ## Kiểm chứng
 
@@ -84,9 +107,11 @@ Các kiểm thử kiểm tra audio hỏng, resample, tín hiệu ở phần cu�
 
 ## Tài liệu và việc tiếp theo
 
+- [Tải FLEURS tiếng Việt: audio và transcript](docs/FLEURS_VI.md).
+- [Kế hoạch phát triển BTL — ưu tiên hiện tại](docs/BTL_PLAN_VI.md).
 - [Hướng dẫn từng bước cho người mới](docs/GETTING_STARTED_VI.md).
 - [Môi trường và kết quả kiểm chứng hiện tại](docs/environment.md).
 - [Pipeline và sơ đồ luồng dự án](docs/ASR_PIPELINE_VI.md).
 - [Kế hoạch chi tiết](docs/ASR_PROJECT_PLAN_VI.md).
 
-Bước tiếp theo: chuẩn bị file giọng nói có reference, tải/check checkpoint, chạy thử thật và bắt đầu bộ dữ liệu pilot để đo WER/CER. Sau đó mới nối engine với API và giao diện upload.
+Các bước tiếp theo trong kế hoạch BTL là đánh giá chất lượng nhận dạng trên nhiều bản ghi và hoàn thiện báo cáo.

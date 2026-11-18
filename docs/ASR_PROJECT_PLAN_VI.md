@@ -1,5 +1,7 @@
 # Kế hoạch chi tiết đồ án ASR tiếng Việt cho người mới
 
+**Cập nhật 18/11/2026:** người dùng đã chọn quy mô BTL. Kế hoạch ưu tiên hiện tại nằm trong [BTL_PLAN_VI.md](BTL_PLAN_VI.md); tài liệu dài dưới đây giữ làm tham khảo cho hướng mở rộng, không phải toàn bộ khối lượng cần hoàn thành cho BTL.
+
 Sơ đồ và luồng xử lý: [Pipeline dự án ASR](ASR_PIPELINE_VI.md).
 
 Ngày lập: 11/11/2026. Cập nhật bước đầu: đã triển khai CLI đọc/chuẩn hóa WAV, xem waveform và gọi Whisper/PhoWhisper; đã tạo môi trường và test xử lý tín hiệu/long-form. Chưa tải được checkpoint, chưa thử nhận dạng giọng nói thật hay chạy benchmark. API và giao diện vẫn là kế hoạch. Xem [hướng dẫn chạy](GETTING_STARTED_VI.md) và [môi trường đã kiểm tra](environment.md).

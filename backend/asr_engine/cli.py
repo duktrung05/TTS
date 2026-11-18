@@ -36,7 +36,7 @@ def doctor() -> dict:
         "cuda_available": cuda, "torch_error": torch_error,
         "default_device": "cuda" if cuda else "cpu", "default_model": DEFAULT_MODEL,
         "notes": [
-            "WAV inspection/preparation works without ffmpeg; MP3 needs ffmpeg in PATH.",
+            "WAV inspection/preparation works without ffmpeg. MP3 and MP4 need ffmpeg in PATH.",
             "This checks libraries and hardware, not pretrained weights or recognition accuracy.",
         ],
     }
@@ -53,7 +53,7 @@ def parser() -> argparse.ArgumentParser:
         ("transcribe", "Chạy Whisper/PhoWhisper và xuất TXT/JSON."),
     ):
         command = commands.add_parser(name, help=help_text)
-        command.add_argument("audio", type=Path, help="Đường dẫn WAV/MP3 trên máy.")
+        command.add_argument("audio", type=Path, help="Đường dẫn WAV/MP3/MP4 trên máy.")
         command.add_argument("--max-duration", type=float, default=600, help="Giới hạn giây, tối đa 600.")
         command.add_argument("--max-size-mb", type=float, default=100, help="Giới hạn MiB, tối đa 100.")
         if name != "inspect":
